@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { User } from '../../../db/models/User';
+import { generateToken } from '../../../lib/jwt';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -31,6 +32,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+
+    // Generate JWT token
+    const token = generateToken({
+      userId: user._id.toString(),
+      email: user.email,
+      access_level: user.access_level
+    });
+
+    // Set httpOnly cookie with JWT token
+    res.setHeader('Set-Cookie', [
+      `auth-token=${token}; HttpOnly; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict; Secure=${process.env.NODE_ENV === 'production'}`
+    ]);
 
     // Return user data (without password)
     const userResponse = {
