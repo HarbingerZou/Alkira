@@ -5,45 +5,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
-
-  const { email, password, is_temporary, access_level } = req.body;
+  console.log(req.body);
+  const { email, password, verificationCode} = req.body;
 
   // Validate required fields
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password are required' });
   }
-
-  // Validate access level
-  if (access_level && !['read', 'write'].includes(access_level)) {
-    return res.status(400).json({ message: 'Invalid access level' });
-  }
-
   try {
     // Check if user already exists
     const existingUser = await User.findOne({ email });
+    
     if (existingUser && !existingUser.is_temporary) {
       return res.status(400).json({ message: 'User already exists' });
     }
+    if(!existingUser) {
+      return res.status(400).json({ message: 'Please send the verification code first' });
+    }
+    
+    if (existingUser && existingUser.verificationCode !== verificationCode) {
+      return res.status(400).json({ message: 'Invalid verification code' });
+    }
 
-    // Create new user
-    const user = new User({
-      email,
-      password,
-      is_temporary: is_temporary || false,
-      access_level: access_level || 'read'
-    });
-
-    // Save user to database
-    await user.save();
+   existingUser.password = password;
+   existingUser.is_temporary = false;
+   existingUser.access_level = 'read';
+   existingUser.verificationCode = null;
+   await existingUser.save();
 
     // Return user data (without password)
     const userResponse = {
-      id: user._id,
-      email: user.email,
-      is_temporary: user.is_temporary,
-      access_level: user.access_level,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
+      id: existingUser._id,
+      email: existingUser.email,
+      is_temporary: existingUser.is_temporary,
+      access_level: existingUser.access_level,
+      createdAt: existingUser.createdAt,
+      updatedAt: existingUser.updatedAt
     };
 
     res.status(201).json({
