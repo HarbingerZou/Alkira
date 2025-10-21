@@ -4,8 +4,10 @@ export default function SignUp() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    verificationCode: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -14,8 +16,47 @@ export default function SignUp() {
     });
   };
 
+  const handleSendVerificationCode = async () => {
+    if (!formData.email) {
+      alert('Please enter your email address first');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      await fetch('/api/sendVerificationCode', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+    } catch (error) {
+      console.error('Error sending verification code:', error);
+      alert(error instanceof Error ? error.message : 'Failed to send verification code. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    
+    if (!formData.verificationCode) {
+      alert('Please enter the verification code');
+      return;
+    }
+    
     // Handle sign up logic here
     console.log('Sign up:', formData);
   };
@@ -78,6 +119,31 @@ export default function SignUp() {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Confirm your password"
               />
+            </div>
+            
+            <div>
+              <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700">
+                Verification Code
+              </label>
+              <div className="mt-1 flex space-x-2">
+                <input
+                  id="verificationCode"
+                  name="verificationCode"
+                  type="text"
+                  value={formData.verificationCode}
+                  onChange={handleChange}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  placeholder="Enter verification code"
+                />
+                <button
+                  type="button"
+                  onClick={handleSendVerificationCode}
+                  disabled={isLoading}
+                  className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Sending...' : 'Send Code'}
+                </button>
+              </div>
             </div>
           </div>
 
