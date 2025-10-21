@@ -1,5 +1,5 @@
 import { useState } from 'react';
-
+import router from 'next/router';
 export default function SignUp() {
   const [formData, setFormData] = useState({
     email: '',
@@ -39,7 +39,7 @@ export default function SignUp() {
         },
         body: JSON.stringify({ email: formData.email }),
       });
-
+      
     } catch (error) {
       console.error('Error sending verification code:', error);
       alert(error instanceof Error ? error.message : 'Failed to send verification code. Please try again.');
@@ -81,7 +81,7 @@ export default function SignUp() {
     }
     const data = await response.json();
     console.log(data);
-    
+    router.push('/');
     
     // Handle sign up logic here
     console.log('Sign up:', formData);
