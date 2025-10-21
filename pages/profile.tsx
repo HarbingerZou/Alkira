@@ -108,13 +108,118 @@ function ProfileInfoCard({ title, value }: ProfileInfoCardProps) {
   );
 }
 
+// Upgrade Section Component
+interface UpgradeSectionProps {
+  currentAccessLevel: string;
+  onUpgrade: (newAccessLevel: string) => void;
+}
+
+function UpgradeSection({ currentAccessLevel, onUpgrade }: UpgradeSectionProps) {
+  const [upgradeCode, setUpgradeCode] = useState("");
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<'success' | 'error' | ''>('');
+
+  const handleUpgrade = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!upgradeCode.trim()) {
+      setMessage("Please enter the upgrade code");
+      setMessageType('error');
+      return;
+    }
+
+    setIsUpgrading(true);
+    setMessage("");
+    setMessageType('');
+
+    try {
+      const response = await fetch('/api/users/upgrade', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ upgradeCode }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage(data.message);
+        setMessageType('success');
+        setUpgradeCode("");
+        onUpgrade(data.access_level);
+      } else {
+        setMessage(data.message || 'Failed to upgrade');
+        setMessageType('error');
+      }
+    } catch (error) {
+      console.error('Error upgrading:', error);
+      setMessage('Failed to upgrade. Please try again.');
+      setMessageType('error');
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
+
+  if (currentAccessLevel === 'write') {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <h3 className="font-medium text-green-900 mb-2">✅ Write Access Active</h3>
+        <p className="text-green-700 text-sm">
+          You have successfully upgraded to write level access!
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+      <h3 className="font-medium text-yellow-900 mb-2">🔓 Upgrade to Write Access</h3>
+      <p className="text-yellow-700 text-sm mb-4">
+        Enter the upgrade code to gain write-level access to the platform.
+      </p>
+      
+      <form onSubmit={handleUpgrade} className="space-y-3">
+        <div className="flex space-x-3">
+          <input
+            type="text"
+            value={upgradeCode}
+            onChange={(e) => setUpgradeCode(e.target.value)}
+            placeholder="Enter upgrade code"
+            className="flex-1 px-3 py-2 border border-yellow-300 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+            disabled={isUpgrading}
+          />
+          <button
+            type="submit"
+            disabled={isUpgrading || !upgradeCode.trim()}
+            className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {isUpgrading ? 'Upgrading...' : 'Upgrade'}
+          </button>
+        </div>
+        
+        {message && (
+          <div className={`text-sm ${
+            messageType === 'success' ? 'text-green-700' : 
+            messageType === 'error' ? 'text-red-700' : 'text-gray-700'
+          }`}>
+            {message}
+          </div>
+        )}
+      </form>
+    </div>
+  );
+}
+
 // Profile Information Component
 interface ProfileInformationProps {
   userProfile: UserType;
   userMessages: MessageType[];
+  onAccessLevelChange: (newAccessLevel: string) => void;
 }
 
-function ProfileInformation({ userProfile, userMessages }: ProfileInformationProps) {
+function ProfileInformation({ userProfile, userMessages, onAccessLevelChange }: ProfileInformationProps) {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-800">Account Information</h2>
@@ -140,6 +245,11 @@ function ProfileInformation({ userProfile, userMessages }: ProfileInformationPro
           value={new Date(userProfile.createdAt).toLocaleDateString()} 
         />
       </div>
+
+      <UpgradeSection 
+        currentAccessLevel={userProfile.access_level || ''}
+        onUpgrade={onAccessLevelChange}
+      />
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="font-medium text-blue-900 mb-2">Account Statistics</h3>
@@ -242,11 +352,19 @@ function UserMessages({ userMessages }: UserMessagesProps) {
 
 export default function Profile({ userMessages, user, userProfile }: ProfileProps) {
   const [activeTab, setActiveTab] = useState<'profile' | 'messages'>('profile');
+  const [currentUserProfile, setCurrentUserProfile] = useState(userProfile);
 
   const navLink = {
     href: "/dashboard",
     label: "Dashboard",
     className: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+  };
+
+  const handleAccessLevelChange = (newAccessLevel: string) => {
+    setCurrentUserProfile(prev => ({
+      ...prev,
+      access_level: newAccessLevel
+    }));
   };
 
   return (
@@ -263,8 +381,9 @@ export default function Profile({ userMessages, user, userProfile }: ProfileProp
 
           {activeTab === 'profile' && (
             <ProfileInformation 
-              userProfile={userProfile}
+              userProfile={currentUserProfile}
               userMessages={userMessages}
+              onAccessLevelChange={handleAccessLevelChange}
             />
           )}
 
