@@ -9,7 +9,7 @@ declare module 'next' {
 }
 
 // For API routes
-export const authenticateToken = (handler: (req: NextApiRequest, res: NextApiResponse) => Promise<void>) => {
+export const authenticateToken = (handler: (req: NextApiRequest, res: NextApiResponse) => Promise<void>, level?: "read" | "write") => {
   return async (req: NextApiRequest, res: NextApiResponse) => {
     try {
         console.log('authenticateToken', req.cookies);
@@ -19,10 +19,14 @@ export const authenticateToken = (handler: (req: NextApiRequest, res: NextApiRes
       if (!token) {
         return res.status(401).json({ message: 'Access token required' });
       }
-
+      
       // Verify token
       const decoded = verifyToken(token);
       req.user = decoded;
+
+      if(level && level === "write" && decoded.access_level !== "write") {
+        return res.status(401).json({ message: 'Access denied, you are not authorized to access this resource' });
+      }
 
       // Call the original handler
       return handler(req, res);

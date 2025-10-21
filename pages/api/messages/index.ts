@@ -36,4 +36,4 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default authenticateToken(handler);
+export default authenticateToken(handler, "write");

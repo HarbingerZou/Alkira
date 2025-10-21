@@ -1,5 +1,9 @@
 import mongoose from "mongoose";
 import { Connection } from '../mongodb';
+import { User } from './User';
+
+// Ensure User model is registered first
+User;
 
 const messageSchema = new mongoose.Schema(
   {
