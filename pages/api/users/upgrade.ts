@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { authenticateToken } from '../../../lib/auth';
 import { User } from '../../../db/models/User';
+import { generateToken } from '../../../lib/jwt';
 
 export default authenticateToken(async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'POST') {
@@ -38,6 +39,16 @@ export default authenticateToken(async (req: NextApiRequest, res: NextApiRespons
     // Update user's access level to write
     user.access_level = 'write';
     await user.save();
+
+    // Generate new JWT token with updated access level
+    const newToken = generateToken({
+      userId: user._id.toString(),
+      email: user.email,
+      access_level: user.access_level
+    });
+
+    // Set the new token as a cookie
+    res.setHeader('Set-Cookie', `auth-token=${newToken}; HttpOnly; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Strict`);
 
     return res.status(200).json({ 
       message: 'Successfully upgraded to write level!',
