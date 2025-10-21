@@ -48,6 +48,8 @@ export const authenticateTokenSSR = (handler: (context: GetServerSidePropsContex
           },
         };
       }
+      const decoded = verifyToken(token);
+      (context.req as any).user = decoded;
 
 
       // Call the original handler

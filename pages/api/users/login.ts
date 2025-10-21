@@ -21,6 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     // Find user by email
     const user = await User.findOne({ email });
+
     if (!user || user.is_temporary) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
