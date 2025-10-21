@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { GetServerSidePropsContext, NextApiRequest, NextApiResponse } from 'next';
 import { verifyToken, JWTPayload } from './jwt';
 
 // Extend NextApiRequest to include user
@@ -8,6 +8,7 @@ declare module 'next' {
   }
 }
 
+// For API routes
 export const authenticateToken = (handler: (req: NextApiRequest, res: NextApiResponse) => Promise<void>) => {
   return async (req: NextApiRequest, res: NextApiResponse) => {
     try {
@@ -28,6 +29,37 @@ export const authenticateToken = (handler: (req: NextApiRequest, res: NextApiRes
     } catch (error) {
       console.error('Token verification failed:', error);
       return res.status(401).json({ message: 'Invalid or expired token' });
+    }
+  };
+};
+
+// For getServerSideProps
+export const authenticateTokenSSR = (handler: (context: GetServerSidePropsContext) => Promise<any>) => {
+  return async (context: GetServerSidePropsContext) => {
+    try {
+      // Get token from cookie
+      const token = context.req.cookies['auth-token'];
+
+      if (!token) {
+        return {
+          redirect: {
+            destination: '/',
+            permanent: false,
+          },
+        };
+      }
+
+
+      // Call the original handler
+      return handler(context);
+    } catch (error) {
+      console.error('Token verification failed:', error);
+      return {
+        redirect: {
+          destination: '/',
+          permanent: false,
+        },
+      };
     }
   };
 };

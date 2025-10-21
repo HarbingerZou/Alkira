@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
-
+import router from 'next/router';
 export default function SignIn() {
   const [formData, setFormData] = useState({
     email: '',
@@ -96,8 +96,8 @@ export default function SignIn() {
       
       // Redirect to dashboard or home page after successful login
       // You can implement your routing logic here
-      alert('Login successful!');
-      
+      //alert('Login successful!');
+      router.push('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
       alert(error instanceof Error ? error.message : 'Login failed. Please try again.');
@@ -189,7 +189,7 @@ export default function SignIn() {
           <div className="text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <Link href="/" className="font-medium text-blue-600 hover:text-blue-500">
+              <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
                 Sign up
               </Link>
             </p>
