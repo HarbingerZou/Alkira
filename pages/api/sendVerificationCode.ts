@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import nodemailer from 'nodemailer';
-
+import { User } from '../../db/models/User';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -20,14 +20,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Generate verification code
   const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  const existingUser = await User.findOne({ email });
+
+  if (existingUser && !existingUser.is_temporary) {
+    return res.status(400).json({ message: 'User already exists' });
+  }else if(existingUser) {
+    existingUser.verificationCode = verificationCode;
+    await existingUser.save();
+  
+  }else{
+    const user = new User({
+      email,
+      is_temporary: true,
+      access_level: null,
+      verificationCode: verificationCode
+    });
+    await user.save();
+  }
 
   try {
     // Configure transporter for Gmail (you can change this to your preferred email service)
     const transporter = nodemailer.createTransport({
       service: 'gmail', // You can also use 'outlook', 'yahoo', etc.
       auth: {
-        user: "jztest2025@gmail.com", // Your email address
-        pass: "kgurmwzhbmqjjhrh", // Your Gmail App Password (16 characters)
+        user: process.env.EMAIL_USER, // Your email address
+        pass: process.env.EMAIL_PASS, // Your Gmail App Password (16 characters)
       },
     });
 
